@@ -1,6 +1,5 @@
 import { cookies } from "next/headers"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
 const BACKEND_INTERNAL_URL = process.env.BACKEND_INTERNAL_URL || "http://localhost:3001/api"
 
 export const serverApiClient = {
@@ -9,13 +8,13 @@ export const serverApiClient = {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth_token")?.value
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      headers["Authorization"] = `Bearer ${token}`
     }
 
     try {

@@ -14,13 +14,13 @@ export const apiClient = {
     const url = `${API_BASE_URL}${endpoint}`
     const token = localStorage.getItem("auth_token")
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      headers['authorization'] = `Bearer ${token}`
     }
 
     try {
@@ -88,7 +88,7 @@ export const authService = {
     return apiClient.get(`/auth/profile/${userId}`)
   },
 
-  async updateProfile(userId: string, updates: any) {
+  async updateProfile(updates: any) {
     return apiClient.patch(`/auth/profile`, updates)
   },
 }

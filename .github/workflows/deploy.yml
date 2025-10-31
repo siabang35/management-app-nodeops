@@ -1,0 +1,45 @@
+name: Deploy NodeOps
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci && cd ..
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build backend
+        run: cd backend && npm run build && cd ..
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker images
+        run: docker-compose build
+
+      - name: Push to registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker-compose push

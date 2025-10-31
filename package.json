@@ -1,0 +1,50 @@
+{
+  "name": "nodeops-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "lint": "next lint",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@nestjs/common": "latest",
+    "@nestjs/config": "latest",
+    "@nestjs/core": "latest",
+    "@nestjs/microservices": "latest",
+    "@nestjs/platform-express": "latest",
+    "@nestjs/websockets": "latest",
+    "@next/font": "^14.2.15",
+    "@radix-ui/react-slot": "latest",
+    "@supabase/supabase-js": "latest",
+    "@tailwindcss/cli": "^4.1.16",
+    "class-transformer": "latest",
+    "class-validator": "latest",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "express": "latest",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.454.0",
+    "next": "^15.0.0",
+    "pdfkit": "latest",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "reflect-metadata": "latest",
+    "rxjs": "latest",
+    "stream": "latest",
+    "tailwind-merge": "^2.5.5",
+    "tw-animate-css": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^22",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5"
+  }
+}

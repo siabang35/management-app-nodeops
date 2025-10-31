@@ -1,0 +1,14 @@
+{
+  "name": "nodeops-db-setup",
+  "version": "1.0.0",
+  "description": "Database setup scripts for NodeOps Project Management App",
+  "scripts": {
+    "setup": "bash scripts/schema.sh",
+    "setup:windows": "cmd /c scripts\\schema-windows.bat",
+    "setup:env": "bash scripts/setup-env.sh",
+    "setup:check": "bash scripts/setup-env.sh"
+  },
+  "keywords": ["supabase", "database", "setup"],
+  "author": "",
+  "license": "MIT"
+}

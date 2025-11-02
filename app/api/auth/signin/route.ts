@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/ssr"
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward request to backend API
-    const backendResponse = await fetch(`${BACKEND_API_URL}/auth/signin`,{  
+    const backendResponse = await fetch(`${BACKEND_API_URL}/auth/signin`,{
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Store token in cookie
+    // Store backend token in cookie
     const cookieStore = await cookies()
     if (backendData.token) {
       cookieStore.set("auth_token", backendData.token, {
@@ -51,13 +52,55 @@ export async function POST(request: NextRequest) {
     const user = backendData.user
     const role = user?.role || "ambassador"
 
+    // Create Supabase session for client-side authentication
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => cookieStore.getAll(),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
+    // Sign in with Supabase using the same credentials
+    const { data: supabaseAuth, error: supabaseError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (supabaseError) {
+      console.error("[API] Supabase signin error:", supabaseError)
+      // If Supabase user doesn't exist, create one
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role,
+            fullName: user?.user_metadata?.fullName || user?.fullName || email.split("@")[0],
+          },
+        },
+      })
+
+      if (signUpError) {
+        console.error("[API] Supabase signup error:", signUpError)
+        // Continue without Supabase session - backend auth was successful
+      }
+    }
+
     return NextResponse.json({
       success: true,
       user: {
         id: user?.id,
         email: user?.email,
         role,
-        fullName: user?.user_metadata?.fullName || user?.email?.split("@")[0],
+        fullName: user?.user_metadata?.fullName || user?.fullName || email.split("@")[0],
       },
       error: null,
     })

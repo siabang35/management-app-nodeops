@@ -5,6 +5,7 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
+  const next = searchParams.get("next") || "/"
 
   if (code) {
     const cookieStore = await cookies()
@@ -27,8 +28,20 @@ export async function GET(request: NextRequest) {
       },
     )
 
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (error) {
+      console.error("Error exchanging code for session:", error)
+      return NextResponse.redirect(new URL("/auth/login?error=callback_failed", request.url))
+    }
+
+    // Get user role and redirect accordingly
+    if (data?.user) {
+      const role = data.user.user_metadata?.role || "ambassador"
+      const redirectPath = role === "moderator" ? "/admin" : "/dashboard"
+      return NextResponse.redirect(new URL(redirectPath, request.url))
+    }
   }
 
-  return NextResponse.redirect(new URL("/", request.url))
+  return NextResponse.redirect(new URL(next, request.url))
 }

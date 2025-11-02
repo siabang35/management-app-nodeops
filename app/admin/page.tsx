@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import AmbassadorDashboard from "@/components/dashboard/AmbassadorDashboard"
+import ModeratorDashboard from "@/components/dashboard/ModeratorDashboard"
 
-export default function DashboardPage() {
+export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
@@ -22,10 +22,10 @@ export default function DashboardPage() {
 
       const userRole = data.user.user_metadata?.role || "ambassador"
 
-      // Redirect moderators to admin page
-      if (userRole === "moderator") {
-        console.log("Moderator detected, redirecting to admin")
-        router.replace("/admin")
+      // Only moderators can access admin page
+      if (userRole !== "moderator") {
+        console.warn("Unauthorized access attempt to admin page")
+        router.replace("/dashboard")
         return
       }
 
@@ -39,7 +39,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center text-slate-400">
-        Loading dashboard...
+        Loading admin panel...
       </div>
     )
   }
@@ -52,5 +52,5 @@ export default function DashboardPage() {
     )
   }
 
-  return <AmbassadorDashboard />
+  return <ModeratorDashboard />
 }

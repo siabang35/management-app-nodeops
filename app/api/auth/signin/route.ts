@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/ssr"
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
@@ -35,23 +36,62 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Store token in cookie
+    // Store token in cookie with proper flags
     const cookieStore = await cookies()
     if (backendData.token) {
       cookieStore.set("auth_token", backendData.token, {
-        httpOnly: true,
+        httpOnly: false, // PENTING: Set false agar client-side bisa baca untuk validation
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60 * 24, // 24 hours
+        maxAge: 60 * 60 * 24 * 7, // 7 days (sesuai JWT expiration)
         path: "/",
       })
+      console.log("[API] ✓ JWT token stored in cookie (httpOnly: false for client access)")
+    } else {
+      console.warn("[API] ✗ No token received from backend")
     }
 
     // Extract user data from backend response
     const user = backendData.user
     const role = user?.role || "ambassador"
 
-    return NextResponse.json({
+    // PENTING: Buat Supabase session juga untuk sinkronisasi
+    // Ini akan membuat middleware dan dashboard pages bisa menggunakan Supabase auth
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll: () => cookieStore.getAll(),
+            setAll: (cookiesToSet) => {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            },
+          },
+        }
+      )
+
+      // Login ke Supabase dengan credentials yang sama
+      const { error: supabaseError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (supabaseError) {
+        console.warn("[API] ⚠ Supabase signin warning:", supabaseError.message)
+        // Tidak return error, karena backend login sudah sukses
+        // Supabase session optional
+      } else {
+        console.log("[API] ✓ Supabase session created successfully")
+      }
+    } catch (supabaseErr) {
+      console.warn("[API] Supabase signin exception:", supabaseErr)
+      // Continue, karena backend auth sudah sukses
+    }
+
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user?.id,
@@ -61,6 +101,11 @@ export async function POST(request: NextRequest) {
       },
       error: null,
     })
+
+    // Ensure cookies are properly set in response
+    console.log("[API] ✓ Signin successful for:", user?.email, "Role:", role)
+    
+    return response
   } catch (error: any) {
     console.error("[API] Signin exception:", error)
     return NextResponse.json(
@@ -69,4 +114,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

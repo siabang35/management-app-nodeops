@@ -2,7 +2,7 @@
 // 🔹 Supabase Universal Client Setup (Server + Client Safe)
 // ============================================================
 
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
 import { createServerClient } from "@supabase/ssr"
 
 // Hanya impor `cookies` jika environment mendukung (Server Component)
@@ -18,9 +18,9 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://oizxsktwayf
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 
 // ============================================================
-// 🔹 Client-side Supabase
+// 🔹 Client-side Supabase (SSR-compatible browser client)
 // ============================================================
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = createBrowserClient(supabaseUrl, supabaseKey)
 
 // ============================================================
 // 🔹 Server-side Supabase (Hanya dipakai di server actions / API routes)

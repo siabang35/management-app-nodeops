@@ -50,4 +50,6 @@ export default function AdminPage() {
   }
 
   return <ModeratorDashboard />
+
 }
+

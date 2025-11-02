@@ -62,4 +62,6 @@ export function validateJWT(token: string): { valid: boolean; payload?: JWTPaylo
   }
 
   return { valid: true, payload }
+
 }
+

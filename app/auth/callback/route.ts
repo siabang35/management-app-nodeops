@@ -44,8 +44,4 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(new URL(next, request.url))
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> e839c4f (update code)

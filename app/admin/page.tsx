@@ -2,56 +2,52 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
 import ModeratorDashboard from "@/components/dashboard/ModeratorDashboard"
 
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data, error } = await supabase.auth.getUser()
-
-      if (error || !data?.user) {
-        console.warn("No Supabase session found:", error)
-        router.replace("/auth/login")
+    // Middleware sudah handle authentication dan role-based routing
+    // Jika user sampai ke halaman ini, berarti sudah authenticated dan role = moderator
+    // Kita hanya perlu simple check untuk memastikan cookie ada
+    
+    const checkAuth = () => {
+      console.log("[Admin] Checking authentication...")
+      
+      // Simple check: apakah ada auth token atau supabase session
+      const cookies = document.cookie.split(';')
+      const hasAuthToken = cookies.some(c => c.trim().startsWith('auth_token='))
+      const hasSupabaseSession = cookies.some(c => c.trim().includes('sb-'))
+      
+      if (hasAuthToken || hasSupabaseSession) {
+        console.log("[Admin] ✓ Moderator authenticated (middleware validated)")
+        setLoading(false)
         return
       }
-
-      const userRole = data.user.user_metadata?.role || "ambassador"
-
-      // Only moderators can access admin page
-      if (userRole !== "moderator") {
-        console.warn("Unauthorized access attempt to admin page")
-        router.replace("/dashboard")
-        return
-      }
-
-      setAuthorized(true)
-      setLoading(false)
+      
+      // Jika tidak ada cookie sama sekali, redirect ke login
+      console.warn("[Admin] ✗ No auth cookies found, redirecting to login")
+      router.replace("/auth/login")
     }
 
-    checkAuth()
+    // Small delay untuk memastikan cookies sudah ter-set setelah redirect dari login
+    const timer = setTimeout(checkAuth, 100)
+    
+    return () => clearTimeout(timer)
   }, [router])
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center text-slate-400">
-        Loading admin panel...
-      </div>
-    )
-  }
-
-  if (!authorized) {
-    return (
-      <div className="flex h-screen items-center justify-center text-slate-400">
-        Redirecting...
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-500 border-r-transparent"></div>
+          <p className="mt-4 text-slate-400">Loading admin panel...</p>
+        </div>
       </div>
     )
   }
 
   return <ModeratorDashboard />
 }
-

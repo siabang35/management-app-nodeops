@@ -12,25 +12,40 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data, error } = await supabase.auth.getUser()
+      try {
+        // Tunggu session siap
+        const { data: sessionData } = await supabase.auth.getSession()
 
-      if (error || !data?.user) {
-        console.warn("No Supabase session found:", error)
+        if (!sessionData?.session) {
+          console.warn("No active session found")
+          router.replace("/auth/login")
+          return
+        }
+
+        const { data, error } = await supabase.auth.getUser()
+
+        if (error || !data?.user) {
+          console.warn("Error getting user:", error)
+          router.replace("/auth/login")
+          return
+        }
+
+        const userRole = data.user.user_metadata?.role || "ambassador"
+        console.log("Dashboard - User:", data.user.email, "Role:", userRole)
+
+        // Redirect moderators to admin page
+        if (userRole === "moderator") {
+          console.log("Moderator detected, redirecting to admin")
+          router.replace("/admin")
+          return
+        }
+
+        setAuthorized(true)
+        setLoading(false)
+      } catch (error) {
+        console.error("Auth check failed:", error)
         router.replace("/auth/login")
-        return
       }
-
-      const userRole = data.user.user_metadata?.role || "ambassador"
-
-      // Redirect moderators to admin page
-      if (userRole === "moderator") {
-        console.log("Moderator detected, redirecting to admin")
-        router.replace("/admin")
-        return
-      }
-
-      setAuthorized(true)
-      setLoading(false)
     }
 
     checkAuth()

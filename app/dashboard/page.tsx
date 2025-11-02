@@ -13,27 +13,41 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Tambahkan delay untuk tunggu session ready setelah login
-        await new Promise(resolve => setTimeout(resolve, 500))
+        console.log("[Dashboard] Starting auth check...")
 
-        // Cek Supabase session
-        const { data: sessionData } = await supabase.auth.getSession()
+        // PENTING: Cek JWT token dulu sebelum Supabase
+        // Karena middleware sudah validasi JWT, jika sampai sini berarti authorized
+        const cookies = document.cookie.split(';')
+        const authTokenCookie = cookies.find(c => c.trim().startsWith('auth_token='))
+        
+        if (authTokenCookie) {
+          console.log("[Dashboard] JWT token found, user is authenticated")
+          setAuthorized(true)
+          setLoading(false)
+          return
+        }
+
+        // Retry mechanism untuk Supabase session dengan backoff
+        let retries = 3
+        let delay = 300
+        let sessionData = null
+
+        for (let i = 0; i < retries; i++) {
+          console.log(`[Dashboard] Checking Supabase session (attempt ${i + 1}/${retries})...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          
+          const { data } = await supabase.auth.getSession()
+          if (data?.session) {
+            sessionData = data
+            console.log("[Dashboard] Supabase session found!")
+            break
+          }
+          
+          delay *= 1.5 // Exponential backoff
+        }
 
         if (!sessionData?.session) {
-          // Fallback: Cek JWT token dari cookie
-          const cookies = document.cookie.split(';')
-          const authTokenCookie = cookies.find(c => c.trim().startsWith('auth_token='))
-          
-          if (authTokenCookie) {
-            // JWT token exists, middleware sudah validasi
-            // Allow access
-            console.log("Dashboard - Using JWT authentication")
-            setAuthorized(true)
-            setLoading(false)
-            return
-          }
-
-          console.warn("No active session found")
+          console.warn("[Dashboard] No session found after retries, redirecting to login")
           router.replace("/auth/login")
           return
         }
@@ -41,17 +55,17 @@ export default function DashboardPage() {
         const { data, error } = await supabase.auth.getUser()
 
         if (error || !data?.user) {
-          console.warn("Error getting user:", error)
+          console.warn("[Dashboard] Error getting user:", error)
           router.replace("/auth/login")
           return
         }
 
         const userRole = data.user.user_metadata?.role || "ambassador"
-        console.log("Dashboard - User:", data.user.email, "Role:", userRole)
+        console.log("[Dashboard] User authenticated:", data.user.email, "Role:", userRole)
 
         // Redirect moderators to admin page
         if (userRole === "moderator") {
-          console.log("Moderator detected, redirecting to admin")
+          console.log("[Dashboard] Moderator detected, redirecting to admin")
           router.replace("/admin")
           return
         }
@@ -59,7 +73,19 @@ export default function DashboardPage() {
         setAuthorized(true)
         setLoading(false)
       } catch (error) {
-        console.error("Auth check failed:", error)
+        console.error("[Dashboard] Auth check failed:", error)
+        
+        // Last resort: Check if JWT token exists
+        const cookies = document.cookie.split(';')
+        const authTokenCookie = cookies.find(c => c.trim().startsWith('auth_token='))
+        
+        if (authTokenCookie) {
+          console.log("[Dashboard] JWT token found in error handler, allowing access")
+          setAuthorized(true)
+          setLoading(false)
+          return
+        }
+        
         router.replace("/auth/login")
       }
     }

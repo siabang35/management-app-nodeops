@@ -34,19 +34,22 @@ export default function LoginPage() {
 
       const role = result.user?.role || "ambassador"
 
-      console.log("[Login] Success - Role:", role, "User:", result.user)
+      console.log("[Login] ✓ Success - Role:", role, "User:", result.user)
 
-      // Redirect based on role
+      // Wait a bit for cookies to be set properly
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Redirect based on role using window.location for full page reload
+      // This ensures all cookies and session are properly loaded
       if (role === "moderator") {
-        router.push("/admin")
+        console.log("[Login] Redirecting to /admin")
+        window.location.href = "/admin"
       } else {
-        router.push("/dashboard")
+        console.log("[Login] Redirecting to /dashboard")
+        window.location.href = "/dashboard"
       }
-      
-      // Force page refresh to ensure session is loaded
-      router.refresh()
     } catch (err: any) {
-      console.error("Login error:", err)
+      console.error("[Login] ✗ Error:", err)
       setError("Login failed. Please try again.")
       setLoading(false)
     }

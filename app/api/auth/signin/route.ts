@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/ssr"
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
@@ -50,6 +51,42 @@ export async function POST(request: NextRequest) {
     // Extract user data from backend response
     const user = backendData.user
     const role = user?.role || "ambassador"
+
+    // PENTING: Buat Supabase session juga untuk sinkronisasi
+    // Ini akan membuat middleware dan dashboard pages bisa menggunakan Supabase auth
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll: () => cookieStore.getAll(),
+            setAll: (cookiesToSet) => {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            },
+          },
+        }
+      )
+
+      // Login ke Supabase dengan credentials yang sama
+      const { error: supabaseError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (supabaseError) {
+        console.warn("[API] Supabase signin warning:", supabaseError.message)
+        // Tidak return error, karena backend login sudah sukses
+        // Supabase session optional
+      } else {
+        console.log("[API] Supabase session created successfully")
+      }
+    } catch (supabaseErr) {
+      console.warn("[API] Supabase signin exception:", supabaseErr)
+      // Continue, karena backend auth sudah sukses
+    }
 
     return NextResponse.json({
       success: true,

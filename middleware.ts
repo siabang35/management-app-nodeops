@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { validateJWT } from "@/lib/jwt-utils"
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -13,6 +14,7 @@ export async function middleware(req: NextRequest) {
 
   const res = NextResponse.next({ request: { headers: req.headers } })
 
+  // Try Supabase authentication first
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,19 +31,49 @@ export async function middleware(req: NextRequest) {
   )
 
   const { data, error } = await supabase.auth.getUser()
-  const user = data?.user
+  let user = data?.user
+  let role = user?.user_metadata?.role || "ambassador"
 
+  // Fallback: Check JWT token if Supabase auth fails
   if (!user || error) {
-    console.log("[v0] No authenticated user, redirecting to login")
+    const authToken = req.cookies.get("auth_token")?.value
+    
+    if (authToken) {
+      const jwtValidation = validateJWT(authToken)
+      
+      if (jwtValidation.valid && jwtValidation.payload) {
+        // JWT valid, allow access
+        role = jwtValidation.payload.role || "ambassador"
+        console.log("[Middleware] Using JWT auth - Email:", jwtValidation.payload.email, "Role:", role, "Path:", pathname)
+        
+        // Role-based routing for JWT users
+        if (pathname.startsWith("/dashboard") && role === "moderator") {
+          const redirectUrl = req.nextUrl.clone()
+          redirectUrl.pathname = "/admin"
+          return NextResponse.redirect(redirectUrl)
+        }
+
+        if (pathname.startsWith("/admin") && role !== "moderator") {
+          const redirectUrl = req.nextUrl.clone()
+          redirectUrl.pathname = "/dashboard"
+          return NextResponse.redirect(redirectUrl)
+        }
+
+        return res
+      }
+    }
+
+    // No valid auth found
+    console.log("[Middleware] No authenticated user, redirecting to login")
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = "/auth/login"
     redirectUrl.searchParams.set("from", pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  const role = user.user_metadata?.role || "ambassador"
-  console.log("[v0] Middleware - User:", user.email, "Role:", role, "Path:", pathname)
+  console.log("[Middleware] Supabase auth - User:", user.email, "Role:", role, "Path:", pathname)
 
+  // Role-based routing for Supabase users
   if (pathname.startsWith("/dashboard") && role === "moderator") {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = "/admin"

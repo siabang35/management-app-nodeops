@@ -36,17 +36,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Store token in cookie
+    // Store token in cookie with proper flags
     const cookieStore = await cookies()
     if (backendData.token) {
       cookieStore.set("auth_token", backendData.token, {
-        httpOnly: true,
+        httpOnly: false, // PENTING: Set false agar client-side bisa baca untuk validation
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60 * 24, // 24 hours
+        maxAge: 60 * 60 * 24 * 7, // 7 days (sesuai JWT expiration)
         path: "/",
       })
-      console.log("[API] ✓ JWT token stored in cookie")
+      console.log("[API] ✓ JWT token stored in cookie (httpOnly: false for client access)")
     } else {
       console.warn("[API] ✗ No token received from backend")
     }

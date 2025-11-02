@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 
-const BACKEND_INTERNAL_URL = "http://localhost:3001"
+const BACKEND_INTERNAL_URL = "http://localhost:3001/api"
 
 export const serverApiClient = {
   async request<T>(endpoint: string, options: RequestInit & { method?: string } = {}): Promise<T> {

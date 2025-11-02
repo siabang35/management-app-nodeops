@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 import { ProjectProvider } from "@/lib/project-context"
+import Head from "next/head"
 
 const inter = Inter({ subsets: ["latin"] })
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"] })
@@ -21,6 +22,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <Head>
+        <meta name="x-user-authenticated" content="" />
+        <meta name="x-user-role" content="" />
+        <meta name="x-user-email" content="" />
+      </Head>
       <body className={`${inter.className} bg-background text-foreground`}>
         <AuthProvider>
           <ProjectProvider>

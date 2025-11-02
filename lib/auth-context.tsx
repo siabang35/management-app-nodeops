@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useMe
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
 import { Ambassador, Moderator, getAmbassadorData } from './supabase'
+import { validateJWT } from './jwt-utils'
 
 interface User {
   id: string
@@ -49,39 +50,93 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = useMemo(() => user?.role === 'admin', [user?.role])
 
   useEffect(() => {
-    // Get initial session and role data
+    // Get initial session and role data - SIMPLIFIED VERSION
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) {
-          console.error('Error getting session:', error)
-        } else if (session?.user) {
-          const userData = {
-            id: session.user.id,
-            email: session.user.email!,
-            full_name: session.user.user_metadata?.full_name,
-            avatar_url: session.user.user_metadata?.avatar_url,
-            role: session.user.user_metadata?.role || 'member',
-            created_at: session.user.created_at,
-          }
-          setUser(userData)
+        console.log('[AuthContext] Initializing auth context...')
 
-          // Fetch ambassador or moderator data based on role
-          if (userData.role === 'ambassador') {
+        // PRIMARY: Check middleware headers (set by server-side middleware)
+        const userAuthenticated = document.querySelector('meta[name="x-user-authenticated"]')?.getAttribute('content')
+        const userRoleHeader = document.querySelector('meta[name="x-user-role"]')?.getAttribute('content')
+        const userEmailHeader = document.querySelector('meta[name="x-user-email"]')?.getAttribute('content')
+
+        console.log('[AuthContext] Middleware headers - Auth:', userAuthenticated, 'Role:', userRoleHeader, 'Email:', userEmailHeader)
+
+        if (userAuthenticated === 'true' && userRoleHeader && userEmailHeader) {
+          // Use middleware data as primary source
+          const userData = {
+            id: '', // Will be filled from Supabase if available
+            email: userEmailHeader,
+            full_name: '',
+            avatar_url: '',
+            role: userRoleHeader as 'admin' | 'moderator' | 'ambassador' | 'member',
+            created_at: new Date().toISOString(),
+          }
+
+          // Try to get additional data from Supabase
+          const { data: { session }, error } = await supabase.auth.getSession()
+          if (!error && session?.user) {
+            userData.id = session.user.id
+            userData.full_name = session.user.user_metadata?.full_name
+            userData.avatar_url = session.user.user_metadata?.avatar_url
+            userData.created_at = session.user.created_at
+          }
+
+          setUser(userData)
+          console.log('[AuthContext] ✓ Auth initialized from middleware - Role:', userData.role, 'Email:', userData.email)
+
+          // Fetch role-specific data
+          if (userData.role === 'ambassador' && userData.id) {
             const ambassadorData = await getAmbassadorData(userData.id)
             setAmbassador(ambassadorData)
           } else if (userData.role === 'moderator') {
-            // Fetch moderator data from backend
-            const { data: modData } = await supabase
-              .from('moderators')
-              .select('*')
-              .eq('user_id', userData.id)
-              .single()
-            setModerator(modData)
+            // For moderators, we might not have Supabase data, but that's ok
+            console.log('[AuthContext] ✓ Moderator role set from middleware')
+          }
+
+          setLoading(false)
+          return
+        }
+
+        // FALLBACK: Check JWT cookie directly (if middleware headers not available)
+        const authToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth_token='))
+          ?.split('=')[1]
+
+        if (authToken) {
+          const jwtValidation = validateJWT(authToken)
+          if (jwtValidation.valid && jwtValidation.payload) {
+            const userData = {
+              id: jwtValidation.payload.sub,
+              email: jwtValidation.payload.email,
+              full_name: '',
+              avatar_url: '',
+              role: jwtValidation.payload.role as 'admin' | 'moderator' | 'ambassador' | 'member',
+              created_at: new Date().toISOString(),
+            }
+            setUser(userData)
+            console.log('[AuthContext] ✓ Auth initialized from JWT fallback - Role:', userData.role, 'Email:', userData.email)
+
+            // Fetch role-specific data
+            if (userData.role === 'ambassador') {
+              const ambassadorData = await getAmbassadorData(userData.id)
+              setAmbassador(ambassadorData)
+            }
           }
         }
+
+        // If no auth found, user is not authenticated
+        console.log('[AuthContext] ✗ No authentication found')
+        setUser(null)
+        setAmbassador(null)
+        setModerator(null)
+
       } catch (error) {
         console.error('Error in getInitialSession:', error)
+        setUser(null)
+        setAmbassador(null)
+        setModerator(null)
       } finally {
         setLoading(false)
       }
@@ -89,38 +144,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession()
 
-    // Listen for auth changes
+    // Listen for auth changes (keep minimal)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        if (session?.user) {
-          const userData = {
-            id: session.user.id,
-            email: session.user.email!,
-            full_name: session.user.user_metadata?.full_name,
-            avatar_url: session.user.user_metadata?.avatar_url,
-            role: session.user.user_metadata?.role || 'member',
-            created_at: session.user.created_at,
-          }
-          setUser(userData)
+      async (event, session) => {
+        console.log('[AuthContext] Auth state change:', event, !!session)
 
-          // Fetch role-specific data
-          if (userData.role === 'ambassador') {
-            const ambassadorData = await getAmbassadorData(userData.id)
-            setAmbassador(ambassadorData)
-          } else if (userData.role === 'moderator') {
-            const { data: modData } = await supabase
-              .from('moderators')
-              .select('*')
-              .eq('user_id', userData.id)
-              .single()
-            setModerator(modData)
-          }
-        } else {
+        if (event === 'SIGNED_OUT' || !session) {
           setUser(null)
           setAmbassador(null)
           setModerator(null)
+          setLoading(false)
+          return
         }
-        setLoading(false)
+
+        // On sign in, refresh the auth context
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Re-run initialization to get updated data
+          await getInitialSession()
+        }
       }
     )
 

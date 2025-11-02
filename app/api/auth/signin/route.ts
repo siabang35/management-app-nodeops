@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward request to backend API
-    const backendResponse = await fetch(`${BACKEND_API_URL}/api/auth/signin`, {
+    const backendResponse = await fetch(`${BACKEND_API_URL}/auth/signin`,{  
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -69,3 +69,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

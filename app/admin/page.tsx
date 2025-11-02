@@ -53,4 +53,8 @@ export default function AdminPage() {
   }
 
   return <ModeratorDashboard />
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> e839c4f (update code)

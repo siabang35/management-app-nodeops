@@ -5,10 +5,10 @@
 -- Insert sample users
 INSERT INTO users (id, email, full_name, role, status)
 VALUES
-  ('550e8400-e29b-41d4-a716-446655440001', 'admin@nodeops.com', 'Admin User', 'admin', 'online'),
-  ('550e8400-e29b-41d4-a716-446655440002', 'john@nodeops.com', 'John Doe', 'member', 'online'),
-  ('550e8400-e29b-41d4-a716-446655440003', 'jane@nodeops.com', 'Jane Smith', 'member', 'away'),
-  ('550e8400-e29b-41d4-a716-446655440004', 'bob@nodeops.com', 'Bob Johnson', 'member', 'offline')
+  ('550e8400-e29b-41d4-a716-446655440001', 'brian@nodeops.com', 'Brian Admin', 'moderator', 'online'),
+  ('550e8400-e29b-41d4-a716-446655440002', 'john@nodeops.com', 'John Doe', 'ambassador', 'online'),
+  ('550e8400-e29b-41d4-a716-446655440003', 'jane@nodeops.com', 'Jane Smith', 'ambassador', 'away'),
+  ('550e8400-e29b-41d4-a716-446655440004', 'bob@nodeops.com', 'Bob Johnson', 'ambassador', 'offline')
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert sample projects

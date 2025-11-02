@@ -6,10 +6,10 @@ import { serverApiClient } from "@/lib/server-api"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
-export async function getTeamMembers(projectId: string) {
+export async function getTeamMembers() {
   try {
     if (API_BASE_URL) {
-      return await serverApiClient.get(`/teams/project/${projectId}`)
+      return await serverApiClient.get(`/teams`)
     }
   } catch (error) {
     console.warn("[getTeamMembers] Backend API failed, falling back to Supabase")
@@ -40,7 +40,6 @@ export async function getTeamMembers(projectId: string) {
     const { data, error } = await supabase
       .from("team_members")
       .select("*")
-      .eq("project_id", projectId)
       .order("joined_at", { ascending: false })
 
     if (error) throw error
@@ -170,10 +169,10 @@ export async function deleteTeamMember(memberId: string) {
   }
 }
 
-export async function getTeamStats(projectId: string) {
+export async function getTeamStats() {
   try {
     if (API_BASE_URL) {
-      return await serverApiClient.get(`/teams/stats/${projectId}`)
+      return await serverApiClient.get(`/teams/stats`)
     }
   } catch (error) {
     console.warn("[getTeamStats] Backend API failed, falling back to Supabase")
@@ -201,7 +200,7 @@ export async function getTeamStats(projectId: string) {
   )
 
   try {
-    const { data, error } = await supabase.from("team_members").select("role").eq("project_id", projectId)
+    const { data, error } = await supabase.from("team_members").select("role")
 
     if (error) throw error
 

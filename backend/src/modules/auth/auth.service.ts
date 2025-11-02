@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException, BadRequestException } from "@nestjs/common"
-import type { JwtService } from "@nestjs/jwt"
-import type { SupabaseService } from "../supabase/supabase.service"
+import { JwtService } from "@nestjs/jwt"
+import { SupabaseService } from "../supabase/supabase.service"
 import type { SignUpDto } from "./dto/sign-up.dto"
 import type { SignInDto } from "./dto/sign-in.dto"
 
@@ -29,16 +29,23 @@ export class AuthService {
           id: user.id,
           email: user.email,
           full_name: dto.fullName,
-          role: "member",
+          role: dto.role,
           status: "offline",
         },
       ])
 
       if (insertError) throw new BadRequestException(insertError.message)
 
+      const token = this.jwtService.sign({
+        sub: user.id,
+        email: user.email,
+        role: dto.role,
+      })
+
       return {
         user,
-        message: "Sign up successful. Please check your email to confirm.",
+        token,
+        message: "Sign up successful.",
       }
     } catch (error: any) {
       throw new BadRequestException(error.message)
@@ -58,13 +65,22 @@ export class AuthService {
 
       const { user, session } = data
 
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+
+      if (userError) throw new BadRequestException(userError.message)
+
       const token = this.jwtService.sign({
         sub: user.id,
         email: user.email,
+        role: userData.role,
       })
 
       return {
-        user,
+        user: { ...user, role: userData.role },
         token,
         session,
       }
@@ -77,7 +93,11 @@ export class AuthService {
     try {
       const supabase = this.supabaseService.getClient()
 
-      const { data, error } = await supabase.from("users").select("*").eq("id", userId).single()
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single()
 
       if (error) throw new BadRequestException(error.message)
 
@@ -91,7 +111,12 @@ export class AuthService {
     try {
       const supabase = this.supabaseService.getClient()
 
-      const { data, error } = await supabase.from("users").update(updates).eq("id", userId).select().single()
+      const { data, error } = await supabase
+        .from("users")
+        .update(updates)
+        .eq("id", userId)
+        .select()
+        .single()
 
       if (error) throw new BadRequestException(error.message)
 

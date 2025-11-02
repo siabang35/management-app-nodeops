@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common"
-import type { SupabaseService } from "../supabase/supabase.service"
+import { SupabaseService } from "../supabase/supabase.service"
 
 @Injectable()
 export class ReportsService {

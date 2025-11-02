@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Home, CheckSquare, BarChart3, Users, FileText, Settings, LogOut, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 
 interface SidebarProps {
   activeView: string
@@ -21,6 +22,48 @@ const navigation = [
 ]
 
 export function Sidebar({ activeView, setActiveView, isOpen }: SidebarProps) {
+  const { user, signOut } = useAuth()
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (user?.name) {
+      return user.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase()
+    }
+    return "??"
+  }
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.name) {
+      return user.name
+    }
+    if (user?.email) {
+      return user.email.split("@")[0]
+    }
+    return "User"
+  }
+
+  // Get user email
+  const getUserEmail = () => {
+    return user?.email || "user@nodeops.io"
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      console.error("Logout failed:", error)
+    }
+  }
+
   return (
     <aside
       className={cn(
@@ -86,16 +129,17 @@ export function Sidebar({ activeView, setActiveView, isOpen }: SidebarProps) {
         <div className="glass-effect rounded-lg p-3 hover-lift animate-slide-in-up">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0 animate-glow-pulse">
-              <span className="text-primary-foreground font-semibold text-sm">JD</span>
+              <span className="text-primary-foreground font-semibold text-sm">{getUserInitials()}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground text-sm truncate">John Doe</p>
-              <p className="text-xs text-muted-foreground truncate">john@nodeops.io</p>
+              <p className="font-medium text-foreground text-sm truncate">{getUserDisplayName()}</p>
+              <p className="text-xs text-muted-foreground truncate">{getUserEmail()}</p>
             </div>
           </div>
         </div>
         <Button
           variant="outline"
+          onClick={handleLogout}
           className="w-full gap-2 bg-transparent hover:bg-muted/50 hover:neon-border transition-all duration-300"
         >
           <LogOut className="w-4 h-4" />

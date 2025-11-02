@@ -198,6 +198,48 @@ export const mindshareService = {
   async updateMindshareScore(userId: string, points: number) {
     return apiClient.patch(`/mindshare/score/${userId}`, { points })
   },
+
+  // Web3 Wallet Service Methods
+  async connectWallet(walletData: {
+    userId: string
+    walletAddress: string
+    walletProvider: string
+    chainId: number
+    networkName: string
+    isPrimary?: boolean
+    signature?: string
+  }) {
+    return apiClient.post("/mindshare/wallet/connect", walletData)
+  },
+
+  async disconnectWallet(userId: string, walletAddress: string) {
+    return apiClient.delete(`/mindshare/wallet/${walletAddress}?userId=${userId}`)
+  },
+
+  async getUserWallets(userId: string) {
+    return apiClient.get(`/mindshare/wallets/${userId}`)
+  },
+
+  async getAmbassadorProfile(userId: string) {
+    return apiClient.get(`/mindshare/ambassador/${userId}`)
+  },
+
+  async createAmbassadorActivity(activityData: {
+    userId: string
+    walletAddress: string
+    activityType: string
+    description: string
+    pointsEarned: number
+    transactionHash?: string
+    chainId?: number
+    contractAddress?: string
+    tokenAmount?: number
+    tokenSymbol?: string
+    usdValue?: number
+    metadata?: any
+  }) {
+    return apiClient.post("/mindshare/activity", activityData)
+  },
 }
 
 // User Service for Supabase

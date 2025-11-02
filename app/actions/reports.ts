@@ -151,3 +151,46 @@ export async function getKeyMetrics() {
     return { data: null, error: error.message }
   }
 }
+
+export async function getReports() {
+  try {
+    if (API_BASE_URL) {
+      return await serverApiClient.get("/reports")
+    }
+  } catch (error) {
+    console.warn("[getReports] Backend API failed, falling back to Supabase")
+  }
+
+  const cookieStore = await cookies()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch (error) {
+            console.error("Error setting cookies:", error)
+          }
+        },
+      },
+    },
+  )
+
+  try {
+    const { data, error } = await supabase
+      .from("reports")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+    return { data, error: null }
+  } catch (error: any) {
+    return { data: null, error: error.message }
+  }
+}

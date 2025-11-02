@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -17,6 +16,8 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [fullName, setFullName] = useState("")
+  const [role, setRole] = useState("ambassador")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -37,20 +38,28 @@ export default function SignUpPage() {
       return
     }
 
+    if (!email || !password || !fullName) {
+      setError("Please fill in all fields")
+      return
+    }
+
     setLoading(true)
 
     try {
-      const result = await signUp(email, password)
+      const result = await signUp(email, password, fullName, role as "ambassador" | "moderator")
 
       if (result.error) {
         setError(result.error)
-      } else {
+        setLoading(false)
+        return
+      }
+
+      if (result.success) {
         setSuccess(true)
         setTimeout(() => router.push("/auth/login"), 2000)
       }
     } catch (err: any) {
-      setError(err.message)
-    } finally {
+      setError(err.message || "An error occurred during signup")
       setLoading(false)
     }
   }
@@ -72,7 +81,7 @@ export default function SignUpPage() {
             <Check className="w-8 h-8 text-white" />
           </motion.div>
           <h2 className="text-2xl font-bold text-white mb-2">Account Created</h2>
-          <p className="text-slate-400">Check your email to verify your account.</p>
+          <p className="text-slate-400">Redirecting to login...</p>
         </motion.div>
       </div>
     )
@@ -97,6 +106,19 @@ export default function SignUpPage() {
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Full Name Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Full Name</label>
+                <Input
+                  type="text"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                  required
+                />
+              </div>
+
               {/* Email Field */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300">Email Address</label>
@@ -107,7 +129,7 @@ export default function SignUpPage() {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-slate-700/50 border-slate-600 text-white"
+                    className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                     required
                   />
                 </div>
@@ -123,7 +145,7 @@ export default function SignUpPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 bg-slate-700/50 border-slate-600 text-white"
+                    className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                     required
                   />
                 </div>
@@ -161,10 +183,24 @@ export default function SignUpPage() {
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 bg-slate-700/50 border-slate-600 text-white"
+                    className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                     required
                   />
                 </div>
+              </div>
+
+              {/* Role Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full bg-slate-700/50 border border-slate-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  required
+                >
+                  <option value="ambassador">Ambassador</option>
+                  <option value="moderator">Moderator</option>
+                </select>
               </div>
 
               {/* Error Message */}

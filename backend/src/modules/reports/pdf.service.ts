@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common"
-import * as PDFDocument from "pdfkit"
+import PDFDocument from "pdfkit"
 import type { Readable } from "stream"
 
 @Injectable()
@@ -63,7 +63,7 @@ export class PdfService {
     })
 
     doc.end()
-    return doc
+    return doc as any
   }
 
   generateTaskReportPDF(reportData: any): Readable {
@@ -107,7 +107,7 @@ export class PdfService {
     })
 
     doc.end()
-    return doc
+    return doc as any
   }
 
   generateTeamReportPDF(reportData: any): Readable {
@@ -166,6 +166,6 @@ export class PdfService {
     })
 
     doc.end()
-    return doc
+    return doc as any
   }
 }

@@ -2,6 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
+import { AuthProvider } from "@/lib/auth-context"
+import { ProjectProvider } from "@/lib/project-context"
 
 const inter = Inter({ subsets: ["latin"] })
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"] })
@@ -19,7 +21,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-background text-foreground`}>{children}</body>
+      <body className={`${inter.className} bg-background text-foreground`}>
+        <AuthProvider>
+          <ProjectProvider>
+            {children}
+          </ProjectProvider>
+        </AuthProvider>
+      </body>
     </html>
   )
 }

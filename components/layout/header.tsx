@@ -4,14 +4,51 @@ import { Search, Bell, Menu, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PdfExportButton } from "@/components/dashboard/pdf-export-button"
+import { useAuth } from "@/lib/auth-context"
 
 interface HeaderProps {
   onMenuClick: () => void
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
+  const { user } = useAuth()
   const today = new Date().toISOString().split("T")[0]
   const lastMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (user?.name) {
+      return user.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase()
+    }
+    return "??"
+  }
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.name) {
+      return user.name
+    }
+    if (user?.email) {
+      return user.email.split("@")[0]
+    }
+    return "User"
+  }
+
+  // Get user role display
+  const getUserRole = () => {
+    if (user?.role) {
+      return user.role.charAt(0).toUpperCase() + user.role.slice(1)
+    }
+    return "User"
+  }
 
   return (
     <header className="h-16 border-b border-border/50 bg-card sticky top-0 z-30 backdrop-blur-md bg-gradient-to-r from-card via-card/95 to-card/90">
@@ -48,14 +85,14 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           <div className="hidden sm:flex items-center gap-3 ml-2 pl-2 border-l border-border/50 glass-effect px-3 py-1 rounded-lg hover-lift">
             <div className="text-right">
-              <div className="text-sm font-medium text-foreground">Alex Rivera</div>
+              <div className="text-sm font-medium text-foreground">{getUserDisplayName()}</div>
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 <Zap className="w-3 h-3 text-accent" />
-                Admin
+                {getUserRole()}
               </div>
             </div>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-glow-pulse">
-              <span className="text-primary-foreground font-semibold text-sm">AR</span>
+              <span className="text-primary-foreground font-semibold text-sm">{getUserInitials()}</span>
             </div>
           </div>
         </div>

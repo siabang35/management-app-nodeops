@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
@@ -19,7 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -27,13 +26,26 @@ export default function LoginPage() {
     try {
       const result = await signIn(email, password)
 
-      if (result.error) {
-        setError(result.error)
-      } else {
-        router.push("/")
+      if (!result.success || result.error) {
+        setError(result.error || "Login failed")
+        return
       }
+
+      const role = result.user?.role || "ambassador"
+
+      console.log("[Login] Success - Role:", role, "User:", result.user)
+
+      // Arahkan user sesuai role dengan delay kecil untuk memastikan session tersimpan
+      setTimeout(() => {
+        if (role === "moderator") {
+          router.replace("/admin")
+        } else {
+          router.replace("/dashboard")
+        }
+      }, 100)
     } catch (err: any) {
-      setError(err.message)
+      console.error("Login error:", err)
+      setError("Login failed. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -47,6 +59,7 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
+        {/* Header */}
         <div className="mb-8 text-center">
           <div className="flex justify-center mb-4">
             <Logo />
@@ -55,10 +68,11 @@ export default function LoginPage() {
           <p className="text-slate-400">Sign in to your NodeOps account</p>
         </div>
 
+        {/* Login Card */}
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Field */}
+              {/* Email */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300">Email Address</label>
                 <div className="relative">
@@ -74,7 +88,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Password Field */}
+              {/* Password */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300">Password</label>
                 <div className="relative">

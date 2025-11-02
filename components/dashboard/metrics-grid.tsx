@@ -1,48 +1,133 @@
 "use client"
 
-import { TrendingUp, TrendingDown, DollarSign, Users, CheckCircle2, Activity } from "lucide-react"
+import { useState, useEffect } from "react"
+import { TrendingUp, TrendingDown, Users, CheckCircle2, Activity, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
-
-const metrics = [
-  {
-    label: "Total Revenue",
-    value: "$124,592",
-    change: "+12.5%",
-    trend: "up",
-    icon: DollarSign,
-    gradient: "from-blue-500/20 to-cyan-500/20",
-    borderColor: "border-blue-500/30",
-  },
-  {
-    label: "Active Tasks",
-    value: "48",
-    change: "+8",
-    trend: "up",
-    icon: CheckCircle2,
-    gradient: "from-emerald-500/20 to-teal-500/20",
-    borderColor: "border-emerald-500/30",
-  },
-  {
-    label: "Team Members",
-    value: "24",
-    change: "+3",
-    trend: "up",
-    icon: Users,
-    gradient: "from-purple-500/20 to-pink-500/20",
-    borderColor: "border-purple-500/30",
-  },
-  {
-    label: "Network Activity",
-    value: "98.4%",
-    change: "+2.4%",
-    trend: "up",
-    icon: Activity,
-    gradient: "from-orange-500/20 to-red-500/20",
-    borderColor: "border-orange-500/30",
-  },
-]
+import { getKeyMetrics } from "@/app/actions/reports"
+import { useToast } from "@/hooks/use-toast"
 
 export function MetricsGrid() {
+  const [keyMetrics, setKeyMetrics] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  // Load key metrics on component mount
+  useEffect(() => {
+    loadKeyMetrics()
+  }, [])
+
+  const loadKeyMetrics = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const result = await getKeyMetrics()
+      if (typeof result === "object" && result !== null && "error" in result) {
+        if (result.error) {
+          console.error("Failed to load key metrics:", result.error)
+          setError("Failed to load metrics")
+          toast({
+            title: "Error loading metrics",
+            description: result.error,
+            variant: "destructive",
+          })
+        } else {
+          setKeyMetrics((result as any).data)
+        }
+      } else {
+        setError("Unexpected response format")
+        toast({
+          title: "Error loading metrics",
+          description: "Unexpected response format",
+          variant: "destructive",
+        })
+      }
+    } catch (err: any) {
+      console.error("Error loading key metrics:", err)
+      setError("Failed to load metrics")
+      toast({
+        title: "Error loading metrics",
+        description: err.message || "Unknown error",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Transform key metrics into display format
+  const metrics = keyMetrics ? [
+    {
+      label: "Total Tasks",
+      value: keyMetrics.totalTasks?.toString() || "0",
+      change: "+5.2%",
+      trend: "up" as const,
+      icon: CheckCircle2,
+      gradient: "from-blue-500/20 to-cyan-500/20",
+      borderColor: "border-blue-500/30",
+    },
+    {
+      label: "Completed Tasks",
+      value: keyMetrics.completedTasks?.toString() || "0",
+      change: `${keyMetrics.completionRate || 0}%`,
+      trend: "up" as const,
+      icon: TrendingUp,
+      gradient: "from-emerald-500/20 to-teal-500/20",
+      borderColor: "border-emerald-500/30",
+    },
+    {
+      label: "Team Members",
+      value: keyMetrics.totalMembers?.toString() || "0",
+      change: "+2",
+      trend: "up" as const,
+      icon: Users,
+      gradient: "from-purple-500/20 to-pink-500/20",
+      borderColor: "border-purple-500/30",
+    },
+    {
+      label: "Completion Rate",
+      value: `${keyMetrics.completionRate || 0}%`,
+      change: "+3.1%",
+      trend: "up" as const,
+      icon: Activity,
+      gradient: "from-orange-500/20 to-red-500/20",
+      borderColor: "border-orange-500/30",
+    },
+  ] : []
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, index) => (
+          <Card key={index} className="p-6 flex items-center justify-center min-h-[140px]">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, index) => (
+          <Card key={index} className="p-6 flex items-center justify-center min-h-[140px]">
+            <div className="text-center">
+              <p className="text-destructive text-sm mb-2">Failed to load</p>
+              <button
+                onClick={loadKeyMetrics}
+                className="text-xs text-primary hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       {metrics.map((metric, index) => {
@@ -92,7 +177,7 @@ export function MetricsGrid() {
                 <div
                   className="h-full bg-gradient-to-r from-primary to-accent rounded-full animate-gradient-shift"
                   style={{
-                    width: `${Math.random() * 40 + 60}%`,
+                    width: `${Math.min(100, Math.max(20, (parseInt(metric.value.replace('%', '')) || 50)))}%`,
                   }}
                 />
               </div>

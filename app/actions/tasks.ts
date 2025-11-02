@@ -6,10 +6,10 @@ import { serverApiClient } from "@/lib/server-api"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
-export async function getTasks(projectId: string) {
+export async function getTasks() {
   try {
     if (API_BASE_URL) {
-      return await serverApiClient.get(`/tasks/project/${projectId}`)
+      return await serverApiClient.get(`/tasks`)
     }
   } catch (error) {
     console.warn("[getTasks] Backend API failed, falling back to Supabase")
@@ -40,7 +40,6 @@ export async function getTasks(projectId: string) {
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
-      .eq("project_id", projectId)
       .order("created_at", { ascending: false })
 
     if (error) throw error

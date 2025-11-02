@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common"
-import type { SupabaseService } from "../supabase/supabase.service"
+import { SupabaseService } from "../supabase/supabase.service"
 import type { CreateTaskDto } from "./dto/create-task.dto"
 import type { UpdateTaskDto } from "./dto/update-task.dto"
 

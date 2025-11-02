@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
         maxAge: 60 * 60 * 24, // 24 hours
         path: "/",
       })
+      console.log("[API] ✓ JWT token stored in cookie")
+    } else {
+      console.warn("[API] ✗ No token received from backend")
     }
 
     // Extract user data from backend response
@@ -77,18 +80,18 @@ export async function POST(request: NextRequest) {
       })
 
       if (supabaseError) {
-        console.warn("[API] Supabase signin warning:", supabaseError.message)
+        console.warn("[API] ⚠ Supabase signin warning:", supabaseError.message)
         // Tidak return error, karena backend login sudah sukses
         // Supabase session optional
       } else {
-        console.log("[API] Supabase session created successfully")
+        console.log("[API] ✓ Supabase session created successfully")
       }
     } catch (supabaseErr) {
       console.warn("[API] Supabase signin exception:", supabaseErr)
       // Continue, karena backend auth sudah sukses
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user?.id,
@@ -98,6 +101,11 @@ export async function POST(request: NextRequest) {
       },
       error: null,
     })
+
+    // Ensure cookies are properly set in response
+    console.log("[API] ✓ Signin successful for:", user?.email, "Role:", role)
+    
+    return response
   } catch (error: any) {
     console.error("[API] Signin exception:", error)
     return NextResponse.json(

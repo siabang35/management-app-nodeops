@@ -28,6 +28,7 @@ export default function LoginPage() {
 
       if (!result.success || result.error) {
         setError(result.error || "Login failed")
+        setLoading(false)
         return
       }
 
@@ -35,18 +36,18 @@ export default function LoginPage() {
 
       console.log("[Login] Success - Role:", role, "User:", result.user)
 
-      // Arahkan user sesuai role dengan delay kecil untuk memastikan session tersimpan
-      setTimeout(() => {
-        if (role === "moderator") {
-          router.replace("/admin")
-        } else {
-          router.replace("/dashboard")
-        }
-      }, 100)
+      // Redirect based on role
+      if (role === "moderator") {
+        router.push("/admin")
+      } else {
+        router.push("/dashboard")
+      }
+      
+      // Force page refresh to ensure session is loaded
+      router.refresh()
     } catch (err: any) {
       console.error("Login error:", err)
       setError("Login failed. Please try again.")
-    } finally {
       setLoading(false)
     }
   }

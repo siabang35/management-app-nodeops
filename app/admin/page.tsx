@@ -13,10 +13,26 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Tunggu session siap
+        // Tambahkan delay untuk tunggu session ready setelah login
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Cek Supabase session
         const { data: sessionData } = await supabase.auth.getSession()
 
         if (!sessionData?.session) {
+          // Fallback: Cek JWT token dari cookie
+          const cookies = document.cookie.split(';')
+          const authTokenCookie = cookies.find(c => c.trim().startsWith('auth_token='))
+          
+          if (authTokenCookie) {
+            // JWT token exists, middleware sudah validasi role
+            // Allow access (middleware sudah redirect non-moderator)
+            console.log("Admin - Using JWT authentication")
+            setAuthorized(true)
+            setLoading(false)
+            return
+          }
+
           console.warn("No active session found")
           router.replace("/auth/login")
           return

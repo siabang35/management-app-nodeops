@@ -37,7 +37,7 @@ export default function LoginPage() {
       console.log("[Login] ✓ Success - Role:", role, "User:", result.user)
 
       // Wait a bit for cookies to be set properly
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
       // Redirect based on role using window.location for full page reload
       // This ensures all cookies and session are properly loaded

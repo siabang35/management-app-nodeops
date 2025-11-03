@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
         id: user?.id,
         email: user?.email,
         role,
-        fullName: user?.user_metadata?.fullName || user?.email?.split("@")[0],
+        fullName: user?.full_name || user?.user_metadata?.fullName || user?.email?.split("@")[0],
+        full_name: user?.full_name,
+        user_metadata: user?.user_metadata,
       },
       error: null,
     })

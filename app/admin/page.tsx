@@ -1,55 +1,35 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
+import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import ModeratorDashboard from "@/components/dashboard/ModeratorDashboard"
 
 export default function AdminPage() {
+  const { loading, isModerator } = useAuth()
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Middleware sudah handle authentication dan role-based routing
-    // Jika user sampai ke halaman ini, berarti sudah authenticated dan role = moderator
-    // Kita hanya perlu simple check untuk memastikan cookie ada
-    
-    const checkAuth = () => {
-      console.log("[Admin] Checking authentication...")
-      
-      // Simple check: apakah ada auth token atau supabase session
-      const cookies = document.cookie.split(';')
-      const hasAuthToken = cookies.some(c => c.trim().startsWith('auth_token='))
-      const hasSupabaseSession = cookies.some(c => c.trim().includes('sb-'))
-      
-      if (hasAuthToken || hasSupabaseSession) {
-        console.log("[Admin] ✓ Moderator authenticated (middleware validated)")
-        setLoading(false)
-        return
-      }
-      
-      // Jika tidak ada cookie sama sekali, redirect ke login
-      console.warn("[Admin] ✗ No auth cookies found, redirecting to login")
-      router.replace("/auth/login")
+    // If not loading and not a moderator, redirect to dashboard
+    if (!loading && !isModerator) {
+      console.log("[Admin] Non-moderator accessing admin, redirecting to dashboard")
+      router.push("/dashboard")
     }
+  }, [loading, isModerator, router])
 
-    // Small delay untuk memastikan cookies sudah ter-set setelah redirect dari login
-    const timer = setTimeout(checkAuth, 100)
-    
-    return () => clearTimeout(timer)
-  }, [router])
-
+  // Show loading state
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-950">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-500 border-r-transparent"></div>
-          <p className="mt-4 text-slate-400">Loading admin panel...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
       </div>
     )
   }
 
+  // Only render if user is moderator
+  if (!isModerator) {
+    return null
+  }
+
   return <ModeratorDashboard />
-
 }
-

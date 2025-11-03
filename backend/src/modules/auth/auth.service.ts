@@ -18,6 +18,12 @@ export class AuthService {
       const { data, error } = await supabase.auth.signUp({
         email: dto.email,
         password: dto.password,
+        options: {
+          data: {
+            full_name: dto.fullName,
+            role: dto.role,
+          }
+        }
       })
 
       if (error) throw new BadRequestException(error.message)
@@ -40,10 +46,20 @@ export class AuthService {
         sub: user.id,
         email: user.email,
         role: dto.role,
+        fullName: dto.fullName,
       })
 
       return {
-        user,
+        user: {
+          ...user,
+          role: dto.role,
+          full_name: dto.fullName,
+          user_metadata: {
+            ...user.user_metadata,
+            role: dto.role,
+            fullName: dto.fullName,
+          }
+        },
         token,
         message: "Sign up successful.",
       }
@@ -65,9 +81,10 @@ export class AuthService {
 
       const { user, session } = data
 
+      // Get complete user data including role
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("role")
+        .select("*")
         .eq("id", user.id)
         .single()
 
@@ -77,10 +94,20 @@ export class AuthService {
         sub: user.id,
         email: user.email,
         role: userData.role,
+        fullName: userData.full_name,
       })
 
       return {
-        user: { ...user, role: userData.role },
+        user: {
+          ...user,
+          role: userData.role,
+          full_name: userData.full_name,
+          user_metadata: {
+            ...user.user_metadata,
+            role: userData.role,
+            fullName: userData.full_name,
+          }
+        },
         token,
         session,
       }

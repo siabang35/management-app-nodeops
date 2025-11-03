@@ -30,13 +30,13 @@ export default function DashboardPage() {
     )
   }
 
-  // If user is not authenticated, middleware will handle redirect
+  // If user is not authenticated, show loading while middleware redirects
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-slate-200 mb-2">Authentication Required</h2>
-          <p className="text-slate-400">Please log in to access your dashboard.</p>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-500 border-r-transparent"></div>
+          <p className="mt-4 text-slate-400">Redirecting to login...</p>
         </div>
       </div>
     )

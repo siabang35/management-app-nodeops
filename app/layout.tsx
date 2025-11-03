@@ -21,6 +21,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <meta name="x-user-authenticated" content="" />
+        <meta name="x-user-role" content="" />
+        <meta name="x-user-email" content="" />
+      </head>
       <body className={`${inter.className} bg-background text-foreground`}>
         <AuthProvider>
           <ProjectProvider>

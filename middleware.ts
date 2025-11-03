@@ -28,11 +28,6 @@ export async function middleware(req: NextRequest) {
       userRole = jwtValidation.payload.role || "ambassador"
       userEmail = jwtValidation.payload.email || ""
       console.log("[Middleware] ✓ JWT auth - Email:", userEmail, "Role:", userRole, "Path:", pathname)
-
-      // Set headers for client-side auth context
-      res.headers.set("x-user-authenticated", "true")
-      res.headers.set("x-user-role", userRole)
-      res.headers.set("x-user-email", userEmail)
     } else {
       console.log("[Middleware] ✗ JWT token invalid or expired")
     }
@@ -79,6 +74,11 @@ export async function middleware(req: NextRequest) {
     redirectUrl.searchParams.set("from", pathname)
     return NextResponse.redirect(redirectUrl)
   }
+
+  // Set headers for client-side auth context (only if authenticated)
+  res.headers.set("x-user-authenticated", "true")
+  res.headers.set("x-user-role", userRole)
+  res.headers.set("x-user-email", userEmail)
 
   // ROLE-BASED ROUTING: Only redirect if user is on wrong dashboard
   if (userRole === "moderator") {
